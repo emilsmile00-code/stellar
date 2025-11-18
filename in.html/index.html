@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Stellar - Smart Curation. Better Discovery.</title>
+    <meta http-equiv="Cache-Control" content="public, max-age=3600">
+    <meta http-equiv="CDN-Cache-Control" content="public, max-age=86400">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- Favicon -->
+    <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2300d4ff'/%3E%3Cstop offset='100%25' style='stop-color:%239d00ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M50 10 L90 50 L50 90 L10 50 Z' fill='none' stroke='url(%23g)' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='15' fill='url(%23g)'/%3E%3C/svg%3E" rel="icon" type="image/svg+xml"/>
+
+    <!-- Open Graph Meta Tags -->
+    <meta content="Stellar - Smart Curation. Better Discovery." property="og:title" id="og-title"/>
+    <meta content="Stellar brings you the best content from across the web - curated tech news, finance insights, gambling trends, fashion updates, and lifestyle stories all in one place." property="og:description" id="og-description"/>
+    <meta content="website" property="og:type" id="og-type"/>
+    <meta content="https://stellar.com" property="og:url" id="og-url"/>
+    <meta content="https://stellar.com/og-image.jpg" property="og:image" id="og-image"/>
+
+    <!-- Twitter Card Meta Tags -->
+    <meta content="summary_large_image" name="twitter:card" id="twitter-card"/>
+    <meta content="Stellar - Smart Curation. Better Discovery." name="twitter:title" id="twitter-title"/>
+    <meta content="Your content curation platform for tech, finance, gambling, fashion, and lifestyle." name="twitter:description" id="twitter-description"/>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Your CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="container">
+    <div class="logo" onclick="showPage('home')">
+        <div class="logo-icon">
+            <svg viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="mainGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1"></stop>
+                        <stop offset="50%" style="stop-color:#6d00ff;stop-opacity:1"></stop>
+                        <stop offset="100%" style="stop-color:#9d00ff;stop-opacity:1"></stop>
+                    </linearGradient>
+                    <radialGradient id="glowGradient">
+                        <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.3"></stop>
+                        <stop offset="100%" style="stop-color:#9d00ff;stop-opacity:0"></stop>
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" fill="url(#glowGradient)" opacity="0.5" r="45"></circle>
+                <path d="M50 10 L90 50 L50 90 L10 50 Z" fill="none" opacity="0.6" stroke="url(#mainGradient)" stroke-width="2.5"></path>
+                <circle cx="50" cy="50" r="15" fill="url(#mainGradient)">
+                    <animate attributeName="r" dur="2s" repeatCount="indefinite" values="15;18;15"></animate>
+                </circle>
+            </svg>
+        </div>
+        <span>Stellar</span>
+    </div>
+    <div class="hamburger" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <div class="nav-links">
+        <a id="nav-tech" onclick="showPage('tech'); closeMobileMenu();">Tech</a>
+        <a id="nav-finance" onclick="showPage('finance'); closeMobileMenu();">Finance</a>
+        <a id="nav-gambling" onclick="showPage('gambling'); closeMobileMenu();">Gambling</a>
+        <a id="nav-fashion" onclick="showPage('fashion'); closeMobileMenu();">Fashion</a>
+        <a id="nav-lifestyle" onclick="showPage('lifestyle'); closeMobileMenu();">Lifestyle</a>
+        <a id="nav-wall" onclick="showPage('wall'); closeMobileMenu();">Wall</a>
+        
+        <div id="auth-buttons">
+            <a onclick="openAuthModal('login')" style="background: rgba(0,212,255,0.1); padding: 8px 16px; border-radius: 8px;">Login</a>
+        </div>
+        <div id="user-menu" class="user-menu" style="display: none;">
+            <button class="user-button" onclick="toggleUserDropdown()">
+                <span id="user-email-display"></span>
+                <span>▼</span>
+            </button>
+            <div id="user-dropdown" class="user-dropdown">
+                <div class="user-dropdown-item" style="pointer-events: none; background: rgba(0,212,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>💰 Available:</span>
+                        <span id="user-balance" style="color: #00ff88; font-weight: bold;">$0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                        <span>⏳ Pending:</span>
+                        <span id="user-pending" style="color: #ffd700; font-weight: bold;">$0.00</span>
+                    </div>
+                </div>
+                <div class="user-dropdown-item" onclick="showPayoutSettings()">
+                    ⚙️ Payout Settings
+                </div>
+                <div class="user-dropdown-item" onclick="handleLogout()">Logout</div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Auth Modal -->
+<div id="auth-modal" class="auth-modal">
+    <div class="auth-modal-content">
+        <span class="auth-modal-close" onclick="closeAuthModal()">&times;</span>
+        <h2 style="color: #00d4ff; margin-bottom: 25px; text-align: center;">Welcome to Stellar</h2>
+        
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+            <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+        
+        <div id="auth-error" class="auth-error" style="display: none;"></div>
+        <div id="auth-success" class="auth-success" style="display: none;"></div>
+        
+        <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="auth-form-group">
+                <label>Email</label>
+                <input type="email" id="login-email" placeholder="your@email.com" required>
+            </div>
+            <div class="auth-form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="auth-submit-btn">Login</button>
+        </form>
+        
+        <form id="signup-form" onsubmit="handleSignup(event)" style="display: none;">
+            <div class="auth-form-group">
+                <label>Email</label>
+                <input type="email" id="signup-email" placeholder="your@email.com" required>
+            </div>
+            <div class="auth-form-group">
+                <label>Password</label>
+                <input type="password" id="signup-password" placeholder="••••••••" minlength="6" required>
+            </div>
+            <div class="auth-form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="signup-confirm-password" placeholder="••••••••" minlength="6" required>
+            </div>
+            <button type="submit" class="auth-submit-btn">Sign Up</button>
+        </form>
+    </div>
+</div>
+
+<!-- HOME PAGE -->
+<div class="page active" id="home-page">
+    <section class="hero">
+        <h1>Smart Curation. <span>Better Discovery.</span></h1>
+        <p>Stellar brings you the best content from across the web - curated tech news, finance insights, gambling trends, fashion updates, and lifestyle stories all in one place.</p>
+        <button class="btn" onclick="showPage('tech')">Explore Content</button>
+    </section>
+
+    <section id="about">
+        <h2>What is <span class="text-gradient-tech">Stellar?</span></h2>
+        <p>Stellar is a content curation platform that monitors hundreds of sources across tech, finance, gambling, fashion, and lifestyle to bring you the most relevant and trending content.</p>
+        <div class="grid grid-3 container">
+            <div class="card">
+                <div class="icon" style="background: linear-gradient(90deg,#00d4ff,#9d00ff);">⏱️</div>
+                <h3 class="text-gradient-tech">Save Time</h3>
+                <p>Get the most important updates from all your interests in one place instead of visiting multiple sites.</p>
+            </div>
+            <div class="card">
+                <div class="icon" style="background: linear-gradient(90deg,#00ff88,#00d4ff);">🎯</div>
+                <h3 class="text-gradient-finance">Stay Informed</h3>
+                <p>Never miss breaking news or trending stories with our real-time content curation.</p>
+            </div>
+            <div class="card">
+                <div class="icon" style="background: linear-gradient(90deg,#ff3399,#9d00ff);">📊</div>
+                <h3 class="text-gradient-fashion">Discover Efficiently</h3>
+                <p>Find relevant content faster with our organized categorization and trending algorithms.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured News Section -->
+    <section id="featured-news">
+        <h2>Featured <span class="text-gradient-tech">News</span></h2>
+        <p style="color: #888;">Latest updates from Tech, Finance, Gambling, Fashion, and Lifestyle</p>
+
+        <!-- Tech Featured News -->
+        <div class="container" style="margin-bottom: 40px;">
+            <h3 class="text-gradient-tech" style="text-align: left; margin-bottom: 20px;">💻 Tech</h3>
+            <div id="home-tech-posts" class="grid grid-3">
+                <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 20px;">Loading tech news...</div>
+            </div>
+        </div>
+
+        <!-- Finance Featured News -->
+        <div class="container" style="margin-bottom: 40px;">
+            <h3 class="text-gradient-finance" style="text-align: left; margin-bottom: 20px;">💰 Finance</h3>
+            <div id="home-finance-posts" class="grid grid-3">
+                <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 20px;">Loading finance news...</div>
+            </div>
+        </div>
+
+        <!-- Gambling Featured News -->
+        <div class="container" style="margin-bottom: 40px;">
+            <h3 class="text-gradient-gambling" style="text-align: left; margin-bottom: 20px;">🎰 Gambling</h3>
+            <div id="home-gambling-posts" class="grid grid-3">
+                <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 20px;">Loading gambling news...</div>
+            </div>
+        </div>
+
+        <!-- Fashion Featured News -->
+        <div class="container" style="margin-bottom: 40px;">
+            <h3 class="text-gradient-fashion" style="text-align: left; margin-bottom: 20px;">👗 Fashion</h3>
+            <div id="home-fashion-posts" class="grid grid-3">
+                <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 20px;">Loading fashion news...</div>
+            </div>
+        </div>
+
+        <!-- Lifestyle Featured News -->
+        <div class="container" style="margin-bottom: 40px;">
+            <h3 class="text-gradient-lifestyle" style="text-align: left; margin-bottom: 20px;">🌟 Lifestyle</h3>
+            <div id="home-lifestyle-posts" class="grid grid-3">
+                <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 20px;">Loading lifestyle news...</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="testimonials">
+        <h2>Why Users <span class="text-gradient-tech">Choose Stellar</span></h2>
+        <div class="grid grid-3 container">
+            <div class="card">
+                <div class="icon" style="background: linear-gradient(90deg,#888,#00d4ff);">🌐</div>
+                <h3 style="color: #00d4ff;">One Hub, All Topics</h3>
+                <p style="color: #888;">From tech innovations to finance trends, gambling insights to fashion updates - access everything in one centralized platform without switching between multiple sources.</p>
+            </div>
+            <div class="card">
+                <div class="icon" style="background: linear-gradient(90deg,#888,#00ff88);">🎯</div>
+                <h3 style="color: #00ff88;">Cross-Domain Discovery</h3>
+                <p style="color: #888;">Discover unexpected connections between different interests. See how tech influences finance, or how fashion trends shape lifestyle choices.</p>
+            </div>
+            <div class="card">
+                <div class="icon" style="background: linear-gradient(90deg,#888,#ff3399);">🚀</div>
+                <h3 style="color: #ff3399;">Future-Ready Curation</h3>
+                <p style="color: #888;">Stay ahead of emerging trends across all categories. Our adaptive curation system evolves with the digital landscape, bringing you tomorrow's topics today.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container">
+        <div class="cta">
+            <h2>Ready to Start Your Journey?</h2>
+            <p>Join Stellar today and explore curated news across tech, finance, gambling, fashion, and lifestyle from around the globe.</p>
+            <a onclick="showPage('tech'); scrollTo(0,0);" style="cursor: pointer;">Get Started Free</a>
+        </div>
+    </section>
+</div>
+
+<!-- TECH PAGE -->
+<div class="page" id="tech-page">
+    <section class="hero tech-hero">
+        <button class="back-button" onclick="showPage('home')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Home
+        </button>
+        <h1><span>Tech</span> Hub</h1>
+        <p>Your ultimate destination for technology news, innovations, gadgets, and the latest industry trends</p>
+    </section>
+
+    <section class="container">
+        <h2 class="section-title">Latest <span class="text-gradient-tech">Tech News</span></h2>
+        <div class="grid grid-2" id="tech-posts">
+            <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 20px;">Loading tech news...</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- FINANCE PAGE -->
+<div class="page" id="finance-page">
+    <section class="hero finance-hero">
+        <button class="back-button" onclick="showPage('home')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Home
+        </button>
+        <h1><span>Finance</span> Insights</h1>
+        <p>Your trusted source for financial news, market analysis, investment strategies, and economic updates</p>
+    </section>
+
+    <section class="container">
+        <h2 class="section-title">Latest <span class="text-gradient-finance">Finance News</span></h2>
+        <div class="grid grid-2" id="finance-posts">
+            <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 20px;">Loading finance news...</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- GAMBLING PAGE -->
+<div class="page" id="gambling-page">
+    <section class="hero gambling-hero">
+        <button class="back-button" onclick="showPage('home')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Home
+        </button>
+        <h1><span>Gambling</span> Trends</h1>
+        <p>Stay updated with casino news, sports betting insights, poker strategies, and gambling industry trends</p>
+    </section>
+
+    <section class="container">
+        <h2 class="section-title">Latest <span class="text-gradient-gambling">Gambling News</span></h2>
+        <div class="grid grid-2" id="gambling-posts">
+            <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 20px;">Loading gambling news...</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- FASHION PAGE -->
+<div class="page" id="fashion-page">
+    <section class="hero fashion-hero">
+        <button class="back-button" onclick="showPage('home')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Home
+        </button>
+        <h1><span>Fashion</span> Central</h1>
+        <p>Discover the latest fashion trends, style guides, designer collections, and beauty updates</p>
+    </section>
+
+    <section class="container">
+        <h2 class="section-title">Latest <span class="text-gradient-fashion">Fashion News</span></h2>
+        <div class="grid grid-2" id="fashion-posts">
+            <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 20px;">Loading fashion news...</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- LIFESTYLE PAGE -->
+<div class="page" id="lifestyle-page">
+    <section class="hero lifestyle-hero">
+        <button class="back-button" onclick="showPage('home')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Home
+        </button>
+        <h1><span>Lifestyle</span> Stories</h1>
+        <p>Explore wellness tips, travel guides, food trends, home decor, and everything lifestyle</p>
+    </section>
+
+    <section class="container">
+        <h2 class="section-title">Latest <span class="text-gradient-lifestyle">Lifestyle News</span></h2>
+        <div class="grid grid-2" id="lifestyle-posts">
+            <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 20px;">Loading lifestyle news...</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- WALL PAGE - Updated with Collapsible Guidelines -->
+<div class="page" id="wall-page">
+    <section class="hero" style="background: linear-gradient(135deg, rgba(0,212,255,0.1), rgba(157,0,255,0.1));">
+        <button class="back-button" onclick="showPage('home')">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
+            Back to Home
+        </button>
+        <h1><span>Offer Wall</span></h1>
+        <p>Complete offers, surveys, and tasks to earn rewards</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+            <span style="background: rgba(0,212,255,0.2); color: #00d4ff; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
+                💰 Instant Rewards
+            </span>
+            <span style="background: rgba(255,215,0,0.2); color: #ffd700; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
+                ⏱️ Quick Tasks
+            </span>
+            <span style="background: rgba(255,51,153,0.2); color: #ff3399; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem;">
+                📱 Mobile Friendly
+            </span>
+        </div>
+    </section>
+
+    <!-- COLLAPSIBLE GUIDELINES SECTION -->
+    <section class="container" style="margin-top: 30px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <button onclick="toggleGuidelines()" id="guidelines-toggle-btn" style="background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(157,0,255,0.2)); color: #00d4ff; border: 2px solid rgba(0,212,255,0.5); padding: 15px 35px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; font-weight: bold; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 12px;">
+                <span style="font-size: 1.5rem;">📋</span>
+                <span>View Guidelines & Compliance</span>
+                <span id="guidelines-arrow" style="transition: transform 0.3s ease;">▼</span>
+            </button>
+        </div>
+
+        <div id="guidelines-content" style="display: none; background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(157,0,255,0.05)); border: 2px solid rgba(0,212,255,0.3); border-radius: 12px; padding: 25px; margin-bottom: 40px; animation: slideDown 0.3s ease;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                <div style="font-size: 3rem;">📋</div>
+                <div>
+                    <h2 style="color: #00d4ff; margin: 0; font-size: 1.5rem;">Guidelines & Compliance</h2>
+                    <p style="color: #888; margin: 5px 0 0 0; font-size: 0.9rem;">Please read carefully before participating</p>
+                </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 20px;">
+                <div style="display: grid; gap: 15px;">
+                    <!-- Daily Limit -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #00d4ff; font-size: 1.3rem; flex-shrink: 0;">✅</span>
+                        <div>
+                            <strong style="color: #00d4ff;">Daily Offer Limit:</strong>
+                            <span style="color: #ccc;"> Maximum of 5 offers per user per day to ensure fair distribution.</span>
+                        </div>
+                    </div>
+
+                    <!-- Single Account -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #00d4ff; font-size: 1.3rem; flex-shrink: 0;">👤</span>
+                        <div>
+                            <strong style="color: #00d4ff;">Single Account Policy:</strong>
+                            <span style="color: #ccc;"> Only one account per user is allowed. Multiple accounts will result in permanent suspension.</span>
+                        </div>
+                    </div>
+
+                    <!-- No VPN/Proxies -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #ffd700; font-size: 1.3rem; flex-shrink: 0;">🚫</span>
+                        <div>
+                            <strong style="color: #ffd700;">VPN & Proxy Prohibition:</strong>
+                            <span style="color: #ccc;"> VPNs, proxies, or location-masking tools are strictly prohibited and will lead to account termination.</span>
+                        </div>
+                    </div>
+
+                    <!-- Regional Offers -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #00ff88; font-size: 1.3rem; flex-shrink: 0;">🌍</span>
+                        <div>
+                            <strong style="color: #00ff88;">Region-Specific Offers:</strong>
+                            <span style="color: #ccc;"> Offers are intelligently tailored to your geographic location for optimal availability and conversion.</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Schedule -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #ffd700; font-size: 1.3rem; flex-shrink: 0;">💳</span>
+                        <div>
+                            <strong style="color: #ffd700;">Payment Schedule:</strong>
+                            <span style="color: #ccc;"> Payouts are processed every Friday for the previous week's earnings (Monday-Sunday).</span>
+                        </div>
+                    </div>
+
+                    <!-- Fraud Detection -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #9d00ff; font-size: 1.3rem; flex-shrink: 0;">⚠️</span>
+                        <div>
+                            <strong style="color: #9d00ff;">Anti-Fraud System:</strong>
+                            <span style="color: #ccc;"> Automated bot activity or fraudulent conversions will be rejected and payments withheld indefinitely.</span>
+                        </div>
+                    </div>
+
+                    <!-- Real-Time Updates -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #9d00ff; font-size: 1.3rem; flex-shrink: 0;">📊</span>
+                        <div>
+                            <strong style="color: #9d00ff;">Balance Updates:</strong>
+                            <span style="color: #ccc;"> Your balance updates in real-time, but payments may be held if suspicious activity is detected at any point.</span>
+                        </div>
+                    </div>
+
+                    <!-- Terms Agreement -->
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <span style="color: #00d4ff; font-size: 1.3rem; flex-shrink: 0;">📜</span>
+                        <div>
+                            <strong style="color: #00d4ff;">Terms of Service:</strong>
+                            <span style="color: #ccc;"> By participating, you agree to our terms and acknowledge that violations may result in account closure without prior notice.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Softer Notice Box -->
+                <div style="margin-top: 20px; padding: 15px; background: rgba(157,0,255,0.1); border-left: 4px solid #9d00ff; border-radius: 6px;">
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <span style="font-size: 1.5rem;">ℹ️</span>
+                        <div>
+                            <strong style="color: #9d00ff; font-size: 1.05rem;">PLEASE NOTE:</strong>
+                            <p style="color: #ccc; margin: 8px 0 0 0; line-height: 1.6;">
+                                Your account and earnings are continuously monitored to maintain platform integrity. We kindly ask that you follow all guidelines to ensure a smooth experience. Any attempts to manipulate the system may result in account review and temporary holds on earnings while we investigate. We're here to support genuine users and appreciate your cooperation in keeping our platform fair for everyone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="wall-container container">
+        <div class="template-sidebar" id="admin-sidebar" style="display: none;">
+            <h3>📋 Templates</h3>
+            <p style="font-size: 0.85rem; color: #888; margin-bottom: 15px;">Select a template to create content</p>
+      
+            <div class="template-category">
+                <h4>📊 Survey Templates</h4>
+                <div class="template-item" onclick="selectTemplate('survey-basic')">
+                    <div class="template-name">Basic Survey</div>
+                    <div class="template-desc">Simple question survey</div>
+                </div>
+                <div class="template-item" onclick="selectTemplate('survey-multiple')">
+                    <div class="template-name">Multiple Choice</div>
+                    <div class="template-desc">Survey with options</div>
+                </div>
+                <div class="template-item" onclick="selectTemplate('survey-rating')">
+                    <div class="template-name">Rating Survey</div>
+                    <div class="template-desc">1-5 star rating</div>
+                </div>
+                <div class="template-item" onclick="selectTemplate('survey-feedback')">
+                    <div class="template-name">Feedback Form</div>
+                    <div class="template-desc">Detailed feedback</div>
+                </div>
+            </div>
+
+            <div class="template-category">
+                <h4>🎁 Offerwall Templates</h4>
+                <div class="template-item" onclick="selectTemplate('offerwall-reward')">
+                    <div class="template-name">Reward Offer</div>
+                    <div class="template-desc">Points/rewards system</div>
+                </div>
+                <div class="template-item" onclick="selectTemplate('offerwall-task')">
+                    <div class="template-name">Task Completion</div>
+                    <div class="template-desc">Complete tasks for rewards</div>
+                </div>
+                <div class="template-item" onclick="selectTemplate('offerwall-download')">
+                    <div class="template-name">App Download</div>
+                    <div class="template-desc">Download app offers</div>
+                </div>
+                <div class="template-item" onclick="selectTemplate('offerwall-video')">
+                    <div class="template-name">Video Watch</div>
+                    <div class="template-desc">Watch videos for rewards</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wall-content" id="wall-content">
+            <div id="public-wall">
+                <h2 style="color: #00d4ff; margin-bottom: 30px; font-size: 2rem;">📋 Available Surveys & Offers</h2>
+                <div class="grid grid-2" id="wall-items">
+                    <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                        <div class="icon" style="font-size: 4rem; opacity: 0.3; margin-bottom: 20px;">🔭</div>
+                        <h3 style="color: #888; margin-bottom: 10px;">No content available yet</h3>
+                        <p style="color: #666;">Check back later for surveys and offers!</p>
+                    </div>
+                </div>
+                
+                <!-- CPAlead Offers Container -->
+                <h2 style="color: #667eea; margin: 40px 0 30px 0; font-size: 2rem;">🎯 Sponsored Offers</h2>
+                <div class="grid grid-2" id="cpalead-offers">
+                    <div style="grid-column: 1 / -1; text-align: center; color: #888; padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p style="margin-top: 20px;">Loading offers...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GUIDELINES MODAL - Shows on first visit (Softer Tone) -->
+<div id="guidelines-modal" class="auth-modal" style="display: none;">
+    <div class="auth-modal-content" style="max-width: 700px;">
+        <span class="auth-modal-close" onclick="closeGuidelinesModal()">&times;</span>
+        
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="font-size: 4rem; margin-bottom: 15px;">👋</div>
+            <h2 style="color: #00d4ff; margin: 0;">Welcome to Stellar Offer Wall</h2>
+            <p style="color: #888; margin: 10px 0 0 0;">Let's quickly go over the guidelines to get you started</p>
+        </div>
+
+        <div style="background: rgba(0,212,255,0.05); border-radius: 12px; padding: 25px; max-height: 500px; overflow-y: auto;">
+            <h3 style="color: #00d4ff; margin: 0 0 20px 0;">📜 Guidelines & Compliance</h3>
+
+            <div style="display: grid; gap: 20px;">
+                <!-- Each guideline -->
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #00d4ff;">
+                    <h4 style="color: #00d4ff; margin: 0 0 8px 0; font-size: 1rem;">✅ Daily Offer Limit</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        You can complete up to <strong>5 offers per day</strong>. This helps ensure fair distribution and gives everyone a chance to earn.
+                    </p>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #00ff88;">
+                    <h4 style="color: #00ff88; margin: 0 0 8px 0; font-size: 1rem;">👤 Single Account Policy</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        Please use <strong>one account per person</strong>. Multiple accounts can lead to account suspension to keep things fair for everyone.
+                    </p>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #ffd700;">
+                    <h4 style="color: #ffd700; margin: 0 0 8px 0; font-size: 1rem;">🚫 No VPN or Proxies</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        We kindly ask that you <strong>don't use VPNs or proxies</strong>. This helps us verify offer completions and ensures you get credit for your work.
+                    </p>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #9d00ff;">
+                    <h4 style="color: #9d00ff; margin: 0 0 8px 0; font-size: 1rem;">🌍 Region-Specific Offers</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        Offers are <strong>customized for your location</strong> to give you the best opportunities available in your region.
+                    </p>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #00d4ff;">
+                    <h4 style="color: #00d4ff; margin: 0 0 8px 0; font-size: 1rem;">💳 Payment Schedule</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        Payments are sent out <strong>every Friday</strong> for the previous week's earnings. Make sure your payout details are set up correctly!
+                    </p>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #00ff88;">
+                    <h4 style="color: #00ff88; margin: 0 0 8px 0; font-size: 1rem;">⚠️ Quality Monitoring</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        We monitor completions to ensure quality. <strong>Genuine participation</strong> helps keep the platform running smoothly for everyone.
+                    </p>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #9d00ff;">
+                    <h4 style="color: #9d00ff; margin: 0 0 8px 0; font-size: 1rem;">📊 Real-Time Balance</h4>
+                    <p style="color: #ccc; margin: 0; font-size: 0.9rem; line-height: 1.6;">
+                        Your balance updates as you complete offers! Occasionally, we may need to verify completions before payments are released.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Softer Notice -->
+            <div style="margin-top: 25px; padding: 20px; background: rgba(157,0,255,0.1); border: 2px solid rgba(157,0,255,0.3); border-radius: 8px;">
+                <div style="display: flex; gap: 12px; align-items: flex-start;">
+                    <span style="font-size: 2rem;">ℹ️</span>
+                    <div>
+                        <h4 style="color: #9d00ff; margin: 0 0 10px 0;">Please Note</h4>
+                        <p style="color: #ccc; margin: 0; line-height: 1.7; font-size: 0.9rem;">
+                            We monitor all activity to maintain a fair and trustworthy platform. Following these guidelines ensures your earnings are processed smoothly. If we notice anything unusual, we may temporarily hold payments while we review the activity. We're committed to supporting genuine users and appreciate your understanding in helping us keep the platform secure for everyone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agreement Checkbox -->
+        <div style="margin: 25px 0; padding: 20px; background: rgba(0,212,255,0.05); border-radius: 8px;">
+            <label style="display: flex; gap: 12px; align-items: flex-start; cursor: pointer;">
+                <input type="checkbox" id="accept-guidelines" style="margin-top: 4px; width: 18px; height: 18px; cursor: pointer;">
+                <span style="color: #ccc; line-height: 1.6;">
+                    I understand and agree to follow these guidelines. I acknowledge that my account activity will be monitored to ensure fair play and that I will participate genuinely.
+                </span>
+            </label>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button onclick="acceptGuidelines()" id="accept-btn" disabled style="background: #00d4ff; color: #000; border: none; padding: 12px 30px; border-radius: 8px; cursor: not-allowed; font-weight: bold; font-size: 1rem; opacity: 0.5; transition: all 0.3s ease;">
+                ✅ I Understand
+            </button>
+            <button onclick="closeGuidelinesModal()" style="background: rgba(255,255,255,0.1); color: #fff; border: 2px solid rgba(255,255,255,0.3); padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.3s ease;">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#guidelines-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+}
+</style>
+
+<script>
+// Toggle guidelines expand/collapse
+function toggleGuidelines() {
+    const content = document.getElementById('guidelines-content');
+    const arrow = document.getElementById('guidelines-arrow');
+    const button = document.getElementById('guidelines-toggle-btn');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+        button.querySelector('span:nth-child(2)').textContent = 'Hide Guidelines & Compliance';
+    } else {
+        content.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+        button.querySelector('span:nth-child(2)').textContent = 'View Guidelines & Compliance';
+    }
+}
+
+// Enable accept button when checkbox is checked
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('accept-guidelines');
+    const acceptBtn = document.getElementById('accept-btn');
+    
+    if (checkbox && acceptBtn) {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                acceptBtn.disabled = false;
+                acceptBtn.style.cursor = 'pointer';
+                acceptBtn.style.opacity = '1';
+            } else {
+                acceptBtn.disabled = true;
+                acceptBtn.style.cursor = 'not-allowed';
+                acceptBtn.style.opacity = '0.5';
+            }
+        });
+    }
+});
+
+// Show guidelines modal on first wall page visit
+function checkFirstWallVisit() {
+    const hasSeenGuidelines = localStorage.getItem('wall_guidelines_seen');
+    
+    if (!hasSeenGuidelines && window.currentUser) {
+        setTimeout(() => {
+            document.getElementById('guidelines-modal').style.display = 'block';
+        }, 500);
+    }
+}
+
+// Show guidelines modal manually
+function showGuidelinesModal() {
+    document.getElementById('guidelines-modal').style.display = 'block';
+}
+
+// Close guidelines modal
+function closeGuidelinesModal() {
+    document.getElementById('guidelines-modal').style.display = 'none';
+}
+
+// Accept guidelines
+function acceptGuidelines() {
+    localStorage.setItem('wall_guidelines_seen', 'true');
+    localStorage.setItem('guidelines_accepted_at', new Date().toISOString());
+    closeGuidelinesModal();
+    
+    // Show success notification
+    if (typeof showNotification === 'function') {
+        showNotification('✅ Thank you! You can now access offers.', 'success');
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('guidelines-modal');
+    if (event.target === modal) {
+        // Don't allow closing by clicking outside on first visit
+        const hasSeenGuidelines = localStorage.getItem('wall_guidelines_seen');
+        if (hasSeenGuidelines) {
+            closeGuidelinesModal();
+        }
+    }
+});
+</script>
+
+<footer>
+    <div class="container">
+        <p>© 2025 Stellar. All rights reserved.</p>
+        <p>Content curation and discovery platform.</p>
+        
+        <!-- Footer Links -->
+        <div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="showPrivacyPolicy()" style="background: transparent; color: #00d4ff; border: none; cursor: pointer; font-size: 0.9rem; text-decoration: underline; padding: 5px 10px; transition: color 0.3s;">
+                Privacy Policy
+            </button>
+            <button onclick="showTermsOfService()" style="background: transparent; color: #00d4ff; border: none; cursor: pointer; font-size: 0.9rem; text-decoration: underline; padding: 5px 10px; transition: color 0.3s;">
+                Terms of Service
+            </button>
+            <button onclick="showContact()" style="background: transparent; color: #00d4ff; border: none; cursor: pointer; font-size: 0.9rem; text-decoration: underline; padding: 5px 10px; transition: color 0.3s;">
+                Contact Us
+            </button>
+        </div>
+        
+        <p style="color: #555; font-size: 0.8rem; margin-top: 15px;">
+            Stellar - Smart Curation. Better Discovery.
+        </p>
+    </div>
+</footer>
+
+<!-- PRIVACY POLICY PAGE MODAL -->
+<div id="privacy-policy-modal" class="auth-modal" style="display: none;">
+    <div class="auth-modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <span class="auth-modal-close" onclick="closePrivacyPolicy()">&times;</span>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 4rem; margin-bottom: 15px;">🔒</div>
+            <h2 style="color: #00d4ff; margin: 0;">Privacy Policy</h2>
+            <p style="color: #888; margin: 10px 0 0 0;">Last Updated: January 2025</p>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 30px; text-align: left; line-height: 1.8; color: #ccc;">
+            <h3 style="color: #00d4ff; margin-top: 0;">1. Information We Collect</h3>
+            <p>We collect information you provide directly to us, including:</p>
+            <ul>
+                <li>Email address and account credentials</li>
+                <li>Payment information (wallet addresses, email for gift cards)</li>
+                <li>Activity data and offer completion information</li>
+                <li>Geographic location data for regional offer targeting</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">2. How We Use Your Information</h3>
+            <p>We use the information we collect to:</p>
+            <ul>
+                <li>Provide and maintain our services</li>
+                <li>Process payments and manage your account</li>
+                <li>Deliver region-specific offers and content</li>
+                <li>Monitor for fraudulent activity and maintain platform security</li>
+                <li>Communicate important updates and notices</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">3. Information Sharing</h3>
+            <p>We do not sell your personal information. We may share your information with:</p>
+            <ul>
+                <li>Offer providers to verify completions</li>
+                <li>Payment processors to facilitate transactions</li>
+                <li>Service providers who assist in platform operations</li>
+                <li>Law enforcement when required by law</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">4. Data Security</h3>
+            <p>We implement appropriate technical and organizational measures to protect your personal information. However, no method of transmission over the internet is 100% secure.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">5. Your Rights</h3>
+            <p>You have the right to:</p>
+            <ul>
+                <li>Access your personal information</li>
+                <li>Request correction of inaccurate data</li>
+                <li>Request deletion of your account</li>
+                <li>Opt out of marketing communications</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">6. Cookies and Tracking</h3>
+            <p>We use cookies and similar tracking technologies to improve user experience and analyze platform usage. You can control cookie settings through your browser.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">7. Changes to This Policy</h3>
+            <p>We may update this privacy policy from time to time. We will notify you of significant changes by posting the new policy on this page.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">8. Contact Us</h3>
+            <p>If you have questions about this privacy policy, please contact us at: <strong style="color: #00d4ff;">info@stellarconcept.art</strong></p>
+        </div>
+
+        <div style="text-align: center; margin-top: 25px;">
+            <button onclick="closePrivacyPolicy()" style="background: #00d4ff; color: #000; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- TERMS OF SERVICE PAGE MODAL -->
+<div id="terms-modal" class="auth-modal" style="display: none;">
+    <div class="auth-modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <span class="auth-modal-close" onclick="closeTermsOfService()">&times;</span>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 4rem; margin-bottom: 15px;">📜</div>
+            <h2 style="color: #00d4ff; margin: 0;">Terms of Service</h2>
+            <p style="color: #888; margin: 10px 0 0 0;">Last Updated: January 2025</p>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 30px; text-align: left; line-height: 1.8; color: #ccc;">
+            <h3 style="color: #00d4ff; margin-top: 0;">1. Acceptance of Terms</h3>
+            <p>By accessing and using Stellar, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our platform.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">2. User Accounts</h3>
+            <ul>
+                <li>You must be at least 18 years old to create an account</li>
+                <li>One account per person is permitted</li>
+                <li>You are responsible for maintaining account security</li>
+                <li>Provide accurate and complete information</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">3. Offer Wall Guidelines</h3>
+            <ul>
+                <li>Maximum 5 offers per user per day</li>
+                <li>VPNs and proxies are prohibited</li>
+                <li>Complete offers genuinely and honestly</li>
+                <li>Fraudulent activity will result in account termination</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">4. Payments and Earnings</h3>
+            <ul>
+                <li>Payments processed every Friday for previous week's earnings</li>
+                <li>Minimum payout threshold: $5.00</li>
+                <li>7 days of account activity required for first payout</li>
+                <li>Earnings may be withheld pending fraud investigation</li>
+                <li>We reserve the right to adjust or cancel payments for violations</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">5. Prohibited Activities</h3>
+            <p>You agree not to:</p>
+            <ul>
+                <li>Use bots, scripts, or automated tools</li>
+                <li>Create multiple accounts</li>
+                <li>Use VPNs or proxies to mask location</li>
+                <li>Engage in fraudulent offer completions</li>
+                <li>Attempt to manipulate the platform</li>
+                <li>Share account credentials</li>
+            </ul>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">6. Content and Intellectual Property</h3>
+            <p>All content on Stellar, including text, graphics, logos, and software, is the property of Stellar and protected by intellectual property laws.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">7. Account Termination</h3>
+            <p>We reserve the right to suspend or terminate accounts that violate these terms, engage in fraudulent activity, or misuse the platform.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">8. Limitation of Liability</h3>
+            <p>Stellar is provided "as is" without warranties. We are not liable for indirect, incidental, or consequential damages arising from platform use.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">9. Changes to Terms</h3>
+            <p>We may modify these terms at any time. Continued use of the platform constitutes acceptance of updated terms.</p>
+
+            <h3 style="color: #00d4ff; margin-top: 30px;">10. Contact Information</h3>
+            <p>For questions about these terms, contact us at: <strong style="color: #00d4ff;">info@stellarconcept.art</strong></p>
+        </div>
+
+        <div style="text-align: center; margin-top: 25px;">
+            <button onclick="closeTermsOfService()" style="background: #00d4ff; color: #000; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTACT PAGE MODAL -->
+<div id="contact-modal" class="auth-modal" style="display: none;">
+    <div class="auth-modal-content" style="max-width: 600px;">
+        <span class="auth-modal-close" onclick="closeContact()">&times;</span>
+        
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="font-size: 4rem; margin-bottom: 15px;">📧</div>
+            <h2 style="color: #00d4ff; margin: 0;">Contact Us</h2>
+            <p style="color: #888; margin: 10px 0 0 0;">We're here to help!</p>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 30px; text-align: center;">
+            <p style="color: #ccc; font-size: 1.1rem; line-height: 1.8; margin-bottom: 25px;">
+                Have questions, feedback, or need assistance? We'd love to hear from you!
+            </p>
+
+            <div style="background: rgba(0,212,255,0.1); border: 2px solid #00d4ff; border-radius: 12px; padding: 25px; margin: 25px 0;">
+                <p style="color: #888; margin: 0 0 15px 0; font-size: 0.9rem;">Email us at:</p>
+                <a href="mailto:info@stellarconcept.art" style="color: #00d4ff; font-size: 1.3rem; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 10px;">
+                    <span>📬</span>
+                    info@stellarconcept.art
+                </a>
+            </div>
+
+            <div style="margin-top: 30px; padding: 20px; background: rgba(157,0,255,0.05); border-radius: 8px; text-align: left;">
+                <h4 style="color: #00d4ff; margin: 0 0 15px 0;">What We Can Help With:</h4>
+                <ul style="color: #ccc; line-height: 1.8; margin: 0;">
+                    <li>Account issues or login problems</li>
+                    <li>Payment and payout questions</li>
+                    <li>Offer completion concerns</li>
+                    <li>Technical support</li>
+                    <li>General inquiries and feedback</li>
+                </ul>
+            </div>
+
+            <p style="color: #888; font-size: 0.9rem; margin-top: 25px; line-height: 1.6;">
+                We typically respond within 24-48 hours during business days. Thank you for being part of the Stellar community!
+            </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 25px;">
+            <button onclick="closeContact()" style="background: #00d4ff; color: #000; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Privacy Policy
+function showPrivacyPolicy() {
+    document.getElementById('privacy-policy-modal').style.display = 'block';
+}
+
+function closePrivacyPolicy() {
+    document.getElementById('privacy-policy-modal').style.display = 'none';
+}
+
+// Terms of Service
+function showTermsOfService() {
+    document.getElementById('terms-modal').style.display = 'block';
+}
+
+function closeTermsOfService() {
+    document.getElementById('terms-modal').style.display = 'none';
+}
+
+// Contact
+function showContact() {
+    document.getElementById('contact-modal').style.display = 'block';
+}
+
+function closeContact() {
+    document.getElementById('contact-modal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('auth-modal')) {
+        const modalId = event.target.id;
+        if (modalId === 'privacy-policy-modal') closePrivacyPolicy();
+        if (modalId === 'terms-modal') closeTermsOfService();
+        if (modalId === 'contact-modal') closeContact();
+    }
+});
+</script>
+
+<style>
+footer button:hover {
+    color: #00ff88 !important;
+    transform: translateY(-2px);
+}
+</style>
+
+<!-- Your JavaScript Files -->
+<script src="js/tracking.js"></script>  
+<script src="js/auth.js"></script>
+<script src="js/payments.js"></script>  
+<script src="js/app.js"></script>
+<script src="js/news.js"></script>
+<script src="js/offers.js"></script>
+<script src="js/ogads.js"></script>
+<script src="js/cpalead.js"></script>
+<script src="js/wall.js"></script>
+
+<!-- Payout Settings Modal - UPDATED WITH GIFT CARD SUPPORT -->
+<div id="payout-settings-modal" class="auth-modal" style="display: none;">
+    <div class="auth-modal-content">
+        <span class="auth-modal-close" onclick="closePayoutSettings()">&times;</span>
+        <h2 style="color: #00d4ff; margin-bottom: 25px; text-align: center;">💰 Payout Settings</h2>
+        
+        <div class="crypto-settings">
+            <div class="auth-form-group">
+                <label>Payout Method</label>
+                <select id="payout-method" class="auth-input" onchange="updatePayoutAddressPlaceholder(this.value)">
+                    <option value="crypto">💎 Crypto (USDT, BTC, ETH)</option>
+                    <option value="giftcard">🎁 Gift Card (Amazon, iTunes, Google Play)</option>
+                    <option value="bank">🏦 Bank Transfer (Coming Soon)</option>
+                </select>
+            </div>
+            
+            <div class="auth-form-group">
+                <label id="payout-address-label">Payment Details</label>
+                <input type="text" id="payout-address" class="auth-input" 
+                       placeholder="Enter your USDT, BTC, or ETH wallet address">
+                <small style="color: #888; font-size: 0.8rem;" id="payout-help-text">
+                    We support USDT (BEP-20), Bitcoin, Ethereum. Payments sent every Friday.
+                </small>
+            </div>
+            
+            <div style="background: rgba(0,212,255,0.1); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <h4 style="color: #00d4ff; margin: 0 0 10px 0;">📋 Payout Rules</h4>
+                <ul style="color: #ccc; font-size: 0.9rem; margin: 0; padding-left: 20px;">
+                    <li>Minimum payout: $5.00</li>
+                    <li>Payments every Friday</li>
+                    <li>7 days activity required for first payout</li>
+                    <li>Crypto: USDT, BTC, ETH</li>
+                    <li>Gift Cards: Amazon, iTunes, Google Play</li>
+                </ul>
+            </div>
+            
+            <!-- ELIGIBILITY DISPLAY -->
+            <div id="payout-eligibility" style="background: rgba(0,212,255,0.1); padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <!-- Eligibility status will be populated by JavaScript -->
+            </div>
+            
+            <button onclick="savePayoutSettings()" class="auth-submit-btn">Save Payout Settings</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update helper text based on payment method selection
+function updatePayoutAddressPlaceholder(method) {
+    const addressInput = document.getElementById('payout-address');
+    const helpText = document.getElementById('payout-help-text');
+    const label = document.getElementById('payout-address-label');
+    
+    if (!addressInput || !helpText || !label) return;
+    
+    switch(method) {
+        case 'crypto':
+            label.textContent = 'Crypto Wallet Address';
+            addressInput.placeholder = 'Enter your USDT, BTC, or ETH wallet address';
+            addressInput.type = 'text';
+            addressInput.disabled = false;
+            helpText.innerHTML = 'We support USDT (BEP-20), Bitcoin, Ethereum. Payments sent every Friday.';
+            break;
+        case 'giftcard':
+            label.textContent = 'Email Address for Gift Card';
+            addressInput.placeholder = 'Enter your email address for gift card delivery';
+            addressInput.type = 'email';
+            addressInput.disabled = false;
+            helpText.innerHTML = '🎁 Gift cards available: Amazon, iTunes, Google Play. Sent to your email every Friday.';
+            break;
+        case 'bank':
+            label.textContent = 'Bank Account Details';
+            addressInput.placeholder = 'Bank transfer coming soon...';
+            addressInput.type = 'text';
+            addressInput.disabled = true;
+            helpText.innerHTML = '🏦 Bank transfer option coming soon. Please use Crypto or Gift Card for now.';
+            break;
+    }
+}
+</script>
+
+<!-- ============================================
+     STEP 1: Add this AFTER <script src="js/wall.js"></script>
+     ============================================ -->
+
+<script>
+// AI-Powered Chat System
+window.chatState = {
+    isOpen: false,
+    messages: [],
+    conversationId: null,
+    unreadCount: 0,
+    lastMessageCheck: Date.now(),
+    handedToHuman: false  // Track if conversation is with human agent
+};
+
+const AI_KNOWLEDGE_BASE = {
+    'login': {
+        keywords: ['login', 'log in', 'sign in', 'signin', 'password', 'account', 'access', 'cant login', "can't access", 'forgot password'],
+        response: `I can help with login issues! Here are some quick solutions:
+
+✅ **Forgot Password?** - Click "Login" then use the password reset link
+✅ **Email not verified?** - Check your spam folder for verification email
+✅ **Account locked?** - Try waiting 10 minutes and try again
+
+**Still having issues?** I can connect you with a human agent who can help reset your account.`,
+        followUp: 'Would you like me to connect you with a human agent?'
+    },
+    'payment': {
+        keywords: ['payment', 'payout', 'money', 'withdraw', 'cash out', 'balance', 'earnings', 'paid', 'paypal', 'crypto', 'wallet', 'pending'],
+        response: `Let me help with payment questions! Here's what you need to know:
+
+💰 **Payout Schedule**: Every Friday for previous week's earnings
+💵 **Minimum Payout**: $5.00
+🕐 **Processing Time**: 24-48 hours after Friday
+📧 **Payment Methods**: Crypto (USDT, BTC, ETH) & Gift Cards
+
+**To get paid:**
+1. Set up your payout method in Settings
+2. Reach minimum $5.00 available balance
+3. Have at least 7 days of account activity
+4. Complete offers legitimately (no VPN/fraud)
+
+**Need more help?** I can connect you with someone who can check your specific account.`,
+        followUp: 'Want to speak with someone about your specific payment situation?'
+    },
+    'offer': {
+        keywords: ['offer', 'task', 'survey', 'complete', 'credit', 'didnt get', "didn't work", 'not working', 'pending', 'not credited'],
+        response: `I understand offer issues can be frustrating. Here's what typically helps:
+
+⏰ **Wait Time**: Most offers credit within 24-48 hours
+✅ **Requirements**: Make sure you completed ALL steps
+🚫 **VPN/Proxy**: These block credits - turn them off
+📱 **Device**: Some offers are mobile-only or desktop-only
+
+**Common Issues:**
+• Offer shows "Pending" - This is normal, wait 24-48hrs
+• No credit received - Allow up to 48hrs, then contact us
+• Offer won't load - Try different browser or clear cache
+
+**Specific Issue?** Connect with a human agent who can investigate your offer history.`,
+        followUp: 'Would you like me to connect you with an agent to check your specific offer?'
+    },
+    'account': {
+        keywords: ['account', 'suspended', 'banned', 'blocked', 'disabled', 'verified', 'verification', 'email'],
+        response: `I can help with account issues! Common situations:
+
+✉️ **Email Verification** - Check spam folder, resend from login page
+🔒 **Account Suspended** - Usually due to VPN use, multiple accounts, or suspicious activity
+⚠️ **Temporary Lock** - Happens after failed login attempts, wait 10-15 minutes
+
+**Account Rules:**
+• One account per person
+• No VPNs or proxies
+• Complete offers genuinely
+• Real email required
+
+**Account suspended or need review?** Let me connect you with someone who can investigate.`,
+        followUp: 'Need a human agent to review your account status?'
+    }
+};
+
+function getAIResponse(userMessage) {
+    const message = userMessage.toLowerCase();
+    for (const [category, data] of Object.entries(AI_KNOWLEDGE_BASE)) {
+        if (data.keywords.some(keyword => message.includes(keyword))) {
+            return { response: data.response, followUp: data.followUp, category: category };
+        }
+    }
+    return {
+        response: `Thank you for your message! I can help with:
+
+• 🔐 Login problems
+• 💰 Payment questions  
+• 🎯 Offer issues
+• 📋 Account concerns
+
+Or I can connect you directly with a human agent for personalized help!`,
+        followUp: 'Would you like to speak with a human agent?',
+        category: 'general'
+    };
+}
+
+function toggleChatModal() {
+    const modal = document.getElementById('customer-chat-modal');
+    const floatButton = document.getElementById('chat-float-button');
+    if (!modal || !floatButton) return;
+    
+    window.chatState.isOpen = !window.chatState.isOpen;
+    
+    if (window.chatState.isOpen) {
+        modal.style.display = 'block';
+        floatButton.style.display = 'none';
+        window.chatState.unreadCount = 0;
+        updateUnreadBadge();
+        setTimeout(() => {
+            const input = document.getElementById('chat-message-input');
+            if (input) input.focus();
+        }, 100);
+        if (window.currentUser) loadChatHistory();
+    } else {
+        modal.style.display = 'none';
+        floatButton.style.display = 'flex';
+        // Reset human agent flag when chat closes
+        window.chatState.handedToHuman = false;
+    }
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chat-message-input');
+    if (!input) return;
+    const message = input.value.trim();
+    if (!message) return;
+    
+    if (!window.currentUser) {
+        addMessageToChat('support', '⚠️ Please login first to start a conversation with support.', true);
+        setTimeout(() => { if (typeof openAuthModal === 'function') openAuthModal('login'); }, 1500);
+        return;
+    }
+    
+    input.value = '';
+    addMessageToChat('user', message);
+    await saveChatMessage('user', message);
+    
+    // If conversation is handed to human agent, don't generate AI response
+    if (window.chatState.handedToHuman) {
+        return;
+    }
+    
+    showTypingIndicator();
+    
+    setTimeout(async () => {
+        hideTypingIndicator();
+        const aiResponse = getAIResponse(message);
+        addMessageToChat('ai', aiResponse.response);
+        await saveChatMessage('ai', aiResponse.response);
+        if (aiResponse.followUp) {
+            setTimeout(() => { addHumanAgentButton(aiResponse.followUp); }, 500);
+        }
+        if (!window.chatState.isOpen) {
+            window.chatState.unreadCount++;
+            updateUnreadBadge();
+        }
+    }, 800);
+}
+
+function addHumanAgentButton(message) {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+    const buttonDiv = document.createElement('div');
+    buttonDiv.innerHTML = `<div class="chat-message support-message" style="display: flex; gap: 10px; align-items: flex-start; margin-top: 15px;"><div style="width: 35px; height: 35px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem;">🤖</div><div style="background: rgba(0,212,255,0.1); padding: 12px 16px; border-radius: 12px; border-top-left-radius: 0; max-width: 75%; border: 1px solid rgba(0,212,255,0.3);"><p style="margin: 0 0 12px 0; color: #ccc; font-size: 0.95rem; line-height: 1.5;">${escapeHtml(message)}</p><button onclick="connectToHumanAgent()" style="background: linear-gradient(135deg, #ff3399, #9d00ff); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: all 0.3s;">👤 Speak to Human Agent</button></div></div>`;
+    container.appendChild(buttonDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+async function connectToHumanAgent() {
+    // Set flag to stop AI responses
+    window.chatState.handedToHuman = true;
+    
+    addMessageToChat('system', '🔄 Connecting you to a human agent... Please wait a moment.', true);
+    if (window.currentUser && window.supabaseClient) {
+        try {
+            await window.supabaseClient.from('support_messages').insert({
+                user_id: window.currentUser.id,
+                conversation_id: window.chatState.conversationId,
+                sender: 'system',
+                message: 'USER_REQUESTED_HUMAN_AGENT',
+                created_at: new Date().toISOString()
+            });
+            await notifyAdmin();
+        } catch (error) { console.error('Error connecting to agent:', error); }
+    }
+    setTimeout(() => {
+        addMessageToChat('support', '✅ A human agent has been notified and will respond shortly. Please leave your message and we\'ll get back to you as soon as possible!');
+    }, 1500);
+}
+
+async function notifyAdmin() {
+    if (window.supabaseClient && window.currentUser) {
+        try {
+            await window.supabaseClient.from('admin_notifications').insert({
+                type: 'new_chat_message',
+                user_id: window.currentUser.id,
+                message: 'New message from user',
+                is_read: false,
+                created_at: new Date().toISOString()
+            });
+        } catch (error) { console.error('Error notifying admin:', error); }
+    }
+}
+
+function sendQuickMessage(message) {
+    const input = document.getElementById('chat-message-input');
+    if (input) { input.value = message; sendChatMessage(); }
+}
+
+function addMessageToChat(sender, message, isWarning = false) {
+    const container = document.getElementById('chat-messages-container');
+    if (!container) return;
+    const messageDiv = document.createElement('div');
+    const isUser = sender === 'user';
+    const isAI = sender === 'ai';
+    const isSystem = sender === 'system';
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    
+    if (isUser) {
+        messageDiv.innerHTML = `<div class="chat-message user-message" style="display: flex; justify-content: flex-end; gap: 10px; align-items: flex-start;"><div style="background: linear-gradient(135deg, #00d4ff, #9d00ff); padding: 12px 16px; border-radius: 12px; border-top-right-radius: 0; max-width: 75%;"><p style="margin: 0; color: white; font-size: 0.95rem; line-height: 1.5;">${escapeHtml(message)}</p><span style="display: block; margin-top: 5px; color: rgba(255,255,255,0.7); font-size: 0.75rem; text-align: right;">${timestamp}</span></div><div style="width: 35px; height: 35px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem;">${window.currentUser?.email?.charAt(0).toUpperCase() || '👤'}</div></div>`;
+    } else {
+        const icon = isAI ? '🤖' : (isSystem ? '🔄' : (isWarning ? '⚠️' : '👤'));
+        messageDiv.innerHTML = `<div class="chat-message support-message" style="display: flex; gap: 10px; align-items: flex-start;"><div style="width: 35px; height: 35px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem;">${icon}</div><div style="background: rgba(0,212,255,0.1); padding: 12px 16px; border-radius: 12px; border-top-left-radius: 0; max-width: 75%; border: 1px solid rgba(0,212,255,0.3);"><p style="margin: 0; color: #ccc; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(message)}</p><span style="display: block; margin-top: 5px; color: #666; font-size: 0.75rem;">${timestamp}</span></div></div>`;
+    }
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+    window.chatState.messages.push({ sender, message, timestamp: new Date() });
+}
+
+function showTypingIndicator() { const i = document.getElementById('typing-indicator'); if (i) i.style.display = 'block'; }
+function hideTypingIndicator() { const i = document.getElementById('typing-indicator'); if (i) i.style.display = 'none'; }
+function updateUnreadBadge() {
+    const badge = document.getElementById('chat-unread-badge');
+    if (badge) {
+        if (window.chatState.unreadCount > 0) {
+            badge.textContent = window.chatState.unreadCount;
+            badge.style.display = 'flex';
+        } else { badge.style.display = 'none'; }
+    }
+}
+
+async function saveChatMessage(sender, message) {
+    if (!window.currentUser || !window.supabaseClient) return;
+    try {
+        if (!window.chatState.conversationId) {
+            window.chatState.conversationId = `conv_${window.currentUser.id}_${Date.now()}`;
+        }
+        const { error } = await window.supabaseClient.from('support_messages').insert({
+            user_id: window.currentUser.id,
+            user_email: window.currentUser.email, // ← ADD THIS LINE
+            conversation_id: window.chatState.conversationId,
+            sender: sender,
+            message: message,
+            created_at: new Date().toISOString()
+        });
+        if (error) console.error('Error saving message:', error);
+        if (sender === 'user') await notifyAdmin();
+    } catch (error) { console.error('Error in saveChatMessage:', error); }
+}
+
+async function loadChatHistory() {
+    if (!window.currentUser || !window.supabaseClient) return;
+    try {
+        const { data, error } = await window.supabaseClient.from('support_messages').select('*').eq('user_id', window.currentUser.id).order('created_at', { ascending: true }).limit(50);
+        if (!error && data && data.length > 0) {
+            const container = document.getElementById('chat-messages-container');
+            if (!container) return;
+            const welcomeMessage = container.querySelector('.chat-message');
+            container.innerHTML = '';
+            if (welcomeMessage) container.appendChild(welcomeMessage);
+            data.forEach(msg => { if (msg.message !== 'USER_REQUESTED_HUMAN_AGENT') { addMessageToChat(msg.sender, msg.message); } });
+        }
+    } catch (error) { console.error('Error loading chat history:', error); }
+}
+
+async function checkForNewMessages() {
+    if (!window.currentUser || !window.supabaseClient || !window.chatState.conversationId) return;
+    try {
+        const { data, error } = await window.supabaseClient.from('support_messages').select('*').eq('conversation_id', window.chatState.conversationId).eq('sender', 'support').gt('created_at', new Date(window.chatState.lastMessageCheck).toISOString()).order('created_at', { ascending: true });
+        if (!error && data && data.length > 0) {
+            data.forEach(msg => {
+                addMessageToChat('support', msg.message);
+                if (!window.chatState.isOpen) { window.chatState.unreadCount++; updateUnreadBadge(); }
+            });
+            window.chatState.lastMessageCheck = Date.now();
+        }
+    } catch (error) { console.error('Error checking messages:', error); }
+}
+
+setInterval(checkForNewMessages, 2000);
+
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('customer-chat-modal');
+    if (event.target === modal) toggleChatModal();
+});
+
+// Admin notifications - Only for verified admins
+(function() {
+    let isAdmin = false;
+    let notificationInterval = null;
+    
+    async function checkAdminStatus() {
+        if (!window.currentUser || !window.supabaseClient) {
+            removeAdminChatLink(); // Remove link if user logs out
+            return;
+        }
+        
+        try {
+            const { data: adminUser, error } = await window.supabaseClient
+                .from('admin_users')
+                .select('*')
+                .eq('user_id', window.currentUser.id)
+                .single();
+            
+            if (adminUser && !error) {
+                isAdmin = true;
+                addAdminChatLink();
+                startAdminNotificationCheck();
+            } else {
+                isAdmin = false;
+                removeAdminChatLink();
+                stopAdminNotificationCheck();
+            }
+        } catch (error) {
+            console.log('Not an admin user');
+            isAdmin = false;
+            removeAdminChatLink();
+            stopAdminNotificationCheck();
+        }
+    }
+    
+    function addAdminChatLink() {
+        const navLinks = document.querySelector('.nav-links');
+        if (!navLinks || document.getElementById('nav-admin-chat')) return;
+        
+        const adminChatLink = document.createElement('div');
+        adminChatLink.className = 'nav-link-with-badge';
+        adminChatLink.id = 'admin-chat-container';
+        adminChatLink.innerHTML = `<a id="nav-admin-chat" href="admin-chat.html" target="_blank" style="position: relative; display: inline-flex; align-items: center; gap: 8px;">💬 Admin Chat<span id="admin-chat-badge" class="admin-chat-badge" style="display: none;">0</span></a>`;
+        
+        const userMenu = document.getElementById('user-menu');
+        if (userMenu) {
+            navLinks.insertBefore(adminChatLink, userMenu);
+        } else {
+            navLinks.appendChild(adminChatLink);
+        }
+    }
+    
+    function removeAdminChatLink() {
+        const container = document.getElementById('admin-chat-container');
+        if (container) {
+            container.remove();
+        }
+    }
+    
+    async function checkForNewChatMessages() {
+        if (!isAdmin || !window.currentUser || !window.supabaseClient) return;
+        
+        try {
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+            const { data } = await window.supabaseClient
+                .from('support_messages')
+                .select('id, conversation_id')
+                .eq('sender', 'user')
+                .gte('created_at', fiveMinutesAgo);
+            
+            if (data && data.length > 0) {
+                const uniqueConversations = new Set(data.map(msg => msg.conversation_id));
+                const badge = document.getElementById('admin-chat-badge');
+                if (badge) {
+                    badge.textContent = uniqueConversations.size;
+                    badge.style.display = 'flex';
+                }
+            }
+        } catch (error) {
+            console.error('Error checking messages:', error);
+        }
+    }
+    
+    function startAdminNotificationCheck() {
+        if (notificationInterval) return; // Prevent multiple intervals
+        checkForNewChatMessages();
+        notificationInterval = setInterval(checkForNewChatMessages, 3000);
+    }
+    
+    function stopAdminNotificationCheck() {
+        if (notificationInterval) {
+            clearInterval(notificationInterval);
+            notificationInterval = null;
+        }
+    }
+    
+    // Listen for auth state changes
+    if (window.supabaseClient) {
+        window.supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                setTimeout(checkAdminStatus, 1000);
+            } else if (event === 'SIGNED_OUT') {
+                isAdmin = false;
+                removeAdminChatLink();
+                stopAdminNotificationCheck();
+            }
+        });
+    }
+    
+    // Initial check (wait for auth to be ready)
+    setTimeout(() => {
+        if (window.currentUser) {
+            checkAdminStatus();
+        }
+    }, 2000);
+})();
+
+console.log('✅ Chat System Loaded');
+</script>
+
+<!-- ============================================
+     STEP 2: Add the chat button HTML RIGHT AFTER the script above
+     ============================================ -->
+
+<!-- FLOATING CHAT BUTTON -->
+<div id="chat-float-button" onclick="toggleChatModal()" style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 20px rgba(0,212,255,0.4); z-index: 9999; transition: all 0.3s ease; animation: pulse 2s infinite;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="white">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+    </svg>
+    <div id="chat-unread-badge" style="position: absolute; top: -5px; right: -5px; background: #ff3399; color: white; border-radius: 50%; width: 24px; height: 24px; display: none; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; border: 2px solid #0a0a1e;">0</div>
+</div>
+
+<!-- CHAT MODAL -->
+<div id="customer-chat-modal" class="auth-modal" style="display: none; z-index: 10000;">
+    <div class="auth-modal-content" style="max-width: 450px; height: 600px; display: flex; flex-direction: column; padding: 0; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #00d4ff, #9d00ff); padding: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 45px; height: 45px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">👋</div>
+                <div>
+                    <h3 style="margin: 0; color: white; font-size: 1.1rem;">Customer Support</h3>
+                    <p style="margin: 0; color: rgba(255,255,255,0.8); font-size: 0.85rem;"><span style="display: inline-block; width: 8px; height: 8px; background: #00ff88; border-radius: 50%; margin-right: 5px;"></span>Online</p>
+                </div>
+            </div>
+            <button onclick="toggleChatModal()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer; padding: 5px; line-height: 1;">&times;</button>
+        </div>
+        <div id="chat-messages-container" style="flex: 1; padding: 20px; background: #0a0a1e; overflow-y: auto; display: flex; flex-direction: column; gap: 15px;">
+            <div class="chat-message support-message" style="display: flex; gap: 10px; align-items: flex-start;">
+                <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem;">🤖</div>
+                <div style="background: rgba(0,212,255,0.1); padding: 12px 16px; border-radius: 12px; border-top-left-radius: 0; max-width: 75%; border: 1px solid rgba(0,212,255,0.3);">
+                    <p style="margin: 0; color: #ccc; font-size: 0.95rem; line-height: 1.5;">Hello! 👋 Welcome to Stellar Support. How can we help you today?</p>
+                    <span style="display: block; margin-top: 5px; color: #666; font-size: 0.75rem;">Just now</span>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin: 10px 0;">
+                <p style="color: #888; font-size: 0.85rem; margin: 0;">Quick actions:</p>
+                <button onclick="sendQuickMessage('I need help with my account')" style="background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; text-align: left; transition: all 0.3s ease;">🔐 Account Issues</button>
+                <button onclick="sendQuickMessage('I have a question about payments')" style="background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; text-align: left; transition: all 0.3s ease;">💳 Payment Help</button>
+                <button onclick="sendQuickMessage('I need help with offers')" style="background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; text-align: left; transition: all 0.3s ease;">🎯 Offer Support</button>
+                <button onclick="sendQuickMessage('I have a general question')" style="background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); color: #00d4ff; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; text-align: left; transition: all 0.3s ease;">💬 General Inquiry</button>
+            </div>
+        </div>
+        <div id="typing-indicator" style="display: none; padding: 10px 20px; background: #0a0a1e; border-top: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; gap: 4px;">
+                    <span style="width: 8px; height: 8px; background: #00d4ff; border-radius: 50%; animation: typing 1.4s infinite;"></span>
+                    <span style="width: 8px; height: 8px; background: #00d4ff; border-radius: 50%; animation: typing 1.4s infinite 0.2s;"></span>
+                    <span style="width: 8px; height: 8px; background: #00d4ff; border-radius: 50%; animation: typing 1.4s infinite 0.4s;"></span>
+                </div>
+                <span style="color: #888; font-size: 0.85rem;">Support is typing...</span>
+            </div>
+        </div>
+        <div style="padding: 15px; background: #16162a; border-top: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="chat-message-input" placeholder="Type your message..." style="flex: 1; padding: 12px 16px; background: #0a0a1e; border: 1px solid rgba(0,212,255,0.3); border-radius: 25px; color: white; font-size: 0.95rem; outline: none;" onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" style="width: 45px; height: 45px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+            <p style="margin: 8px 0 0 0; color: #666; font-size: 0.75rem; text-align: center;">Messages are monitored. Be respectful and professional.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse { 0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(0,212,255,0.4); } 50% { transform: scale(1.05); box-shadow: 0 4px 30px rgba(0,212,255,0.6); } }
+@keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-10px); } }
+#chat-float-button:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(0,212,255,0.6); }
+#chat-messages-container::-webkit-scrollbar { width: 6px; }
+#chat-messages-container::-webkit-scrollbar-track { background: transparent; }
+#chat-messages-container::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 3px; }
+</style>
+
+
+
+</body>
+</html>

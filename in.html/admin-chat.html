@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Chat - Customer Support</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background: #0a0a0f;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #00d4ff, #9d00ff);
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .conversations-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+        
+        .conversation-list {
+            background: #16162a;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100%;
+        }
+        
+        .conversation-item {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .conversation-item:hover {
+            background: rgba(255,255,255,0.1);
+            border-left-color: #00d4ff;
+        }
+        
+        .conversation-item.active {
+            background: rgba(0,212,255,0.2);
+            border-left-color: #00d4ff;
+        }
+        
+        .conversation-item.unread {
+            border-left-color: #ff3399;
+            animation: pulse-conv 2s infinite;
+        }
+        
+        .chat-area {
+            background: #16162a;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .chat-input-area {
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .message-bubble {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .message-bubble.user {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+        
+        .message-bubble.user .message-content {
+            background: linear-gradient(135deg, #00d4ff, #9d00ff);
+            color: white;
+        }
+        
+        .message-bubble.support .message-content,
+        .message-bubble.ai .message-content {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            color: #ccc;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff3399;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse-conv {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 51, 153, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(255, 51, 153, 0);
+            }
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <h1>💬 Admin Customer Support</h1>
+        <p id="admin-email-display" style="margin: 5px 0 0 0; opacity: 0.9;"></p>
+        <div style="margin-top: 10px;">
+            <span id="active-conversations-count" style="background: rgba(0,0,0,0.2); padding: 5px 15px; border-radius: 20px; margin: 0 10px;">
+                📊 Active: 0
+            </span>
+            <span id="unread-count-badge" style="background: #ff3399; padding: 5px 15px; border-radius: 20px; display: none;">
+                🔔 Unread: 0
+            </span>
+        </div>
+    </div>
+
+    <div id="auth-section" style="max-width: 500px; margin: 100px auto; padding: 20px;">
+        <div style="background: #16162a; padding: 40px; border-radius: 12px;">
+            <h3>Admin Login Required</h3>
+            <input type="email" id="admin-email" placeholder="Admin Email" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #333; background: #0a0a0f; color: white;">
+            <input type="password" id="admin-password" placeholder="Password" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #333; background: #0a0a0f; color: white;">
+            <button onclick="adminLogin()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #00d4ff, #9d00ff); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem;">
+                Login as Admin
+            </button>
+        </div>
+    </div>
+
+    <div id="admin-content" class="conversations-container" style="display: none;">
+        <div class="conversation-list">
+            <h3 style="margin-top: 0;">💬 Conversations</h3>
+            <div id="conversations-list">
+                <p style="text-align: center; color: #666; padding: 40px 20px;">No active conversations</p>
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div id="chat-header" style="padding: 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <p style="color: #666; margin: 0;">Select a conversation to start chatting</p>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+                <div style="text-align: center; padding: 60px 20px; color: #666;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">💬</div>
+                    <h3>No Conversation Selected</h3>
+                    <p>Choose a conversation from the list to view and respond</p>
+                </div>
+            </div>
+            
+            <div id="typing-indicator" class="typing-indicator">
+                User is typing...
+            </div>
+            
+            <div class="chat-input-area">
+                <div style="display: flex; gap: 10px;">
+                    <input 
+                        type="text" 
+                        id="admin-message-input" 
+                        placeholder="Type your response..." 
+                        style="flex: 1; padding: 12px 16px; background: #0a0a0f; border: 1px solid rgba(0,212,255,0.3); border-radius: 8px; color: white; font-size: 0.95rem; outline: none;"
+                        onkeypress="if(event.key === 'Enter') sendAdminMessage()"
+                        disabled
+                    >
+                    <button onclick="sendAdminMessage()" id="send-btn" disabled style="padding: 12px 24px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold;">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use the shared Supabase client from the opener window to prevent session conflicts
+        const supabase = window.opener?.supabaseClient || window.supabase.createClient(
+            'https://qpwpvehfriedhafjmzij.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwd3B2ZWhmcmllZGhhZmptemlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NTI2ODMsImV4cCI6MjA3NjIyODY4M30.R5ITHyu5OGUE_Jw0zMmLzpL7SjPEvJzwSQamwS2iCow',
+            {
+                auth: {
+                    persistSession: false  // Don't persist session in admin panel to avoid conflicts
+                }
+            }
+        );
+
+        let currentAdmin = null;
+        let selectedConversation = null;
+        let conversations = {};
+        let lastMessageCheck = Date.now();
+
+        async function adminLogin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                alert('Login failed: ' + error.message);
+                return;
+            }
+
+            currentAdmin = data.user;
+
+            // Check if user is admin
+            const { data: adminUser } = await supabase
+                .from('admin_users')
+                .select('*')
+                .eq('user_id', currentAdmin.id)
+                .single();
+
+            if (!adminUser) {
+                alert('Access denied: Admin privileges required');
+                await supabase.auth.signOut();
+                currentAdmin = null;
+                return;
+            }
+
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'grid';
+            document.getElementById('admin-email-display').textContent = `Logged in as: ${email}`;
+            
+            loadConversations();
+            startRealTimeSync();
+        }
+
+        async function loadConversations() {
+            try {
+                // Get all messages - user_email should be stored in the message for admin access
+                const { data, error } = await supabase
+                    .from('support_messages')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    console.error('Error loading conversations:', error);
+                    throw error;
+                }
+
+                if (!data || data.length === 0) {
+                    console.log('No messages found');
+                    conversations = {};
+                    displayConversations();
+                    return;
+                }
+
+                // Group by conversation_id
+                conversations = {};
+                data.forEach(msg => {
+                    if (!conversations[msg.conversation_id]) {
+                        conversations[msg.conversation_id] = {
+                            id: msg.conversation_id,
+                            userId: msg.user_id,
+                            // Try to get email from message data or use fallback
+                            userEmail: msg.user_email || msg.user_id?.substring(0, 8) + '...',
+                            messages: [],
+                            lastMessage: msg.created_at,
+                            unread: msg.sender === 'user' ? 1 : 0
+                        };
+                    }
+                    conversations[msg.conversation_id].messages.push(msg);
+                    
+                    // Count unread user messages
+                    if (msg.sender === 'user' && new Date(msg.created_at) > new Date(lastMessageCheck)) {
+                        conversations[msg.conversation_id].unread++;
+                    }
+                });
+
+                displayConversations();
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+            }
+        }
+
+        function displayConversations() {
+            const container = document.getElementById('conversations-list');
+            const convArray = Object.values(conversations);
+
+            if (convArray.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px 20px;">No conversations yet</p>';
+                return;
+            }
+
+            // Sort by last message
+            convArray.sort((a, b) => new Date(b.lastMessage) - new Date(a.lastMessage));
+
+            const totalUnread = convArray.reduce((sum, conv) => sum + (conv.unread || 0), 0);
+            document.getElementById('active-conversations-count').textContent = `📊 Active: ${convArray.length}`;
+            
+            if (totalUnread > 0) {
+                const badge = document.getElementById('unread-count-badge');
+                badge.textContent = `🔔 Unread: ${totalUnread}`;
+                badge.style.display = 'inline-block';
+            }
+
+            container.innerHTML = convArray.map(conv => `
+                <div class="conversation-item ${conv.unread > 0 ? 'unread' : ''} ${selectedConversation?.id === conv.id ? 'active' : ''}" 
+                     onclick="selectConversation('${conv.id}')">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <strong style="color: #00d4ff;">${conv.userEmail}</strong>
+                            <p style="margin: 5px 0 0 0; color: #888; font-size: 0.85rem;">
+                                ${conv.messages[conv.messages.length - 1]?.message.substring(0, 50)}...
+                            </p>
+                        </div>
+                        ${conv.unread > 0 ? `<span class="notification-badge">${conv.unread}</span>` : ''}
+                    </div>
+                    <small style="color: #666;">${new Date(conv.lastMessage).toLocaleString()}</small>
+                </div>
+            `).join('');
+        }
+
+        function selectConversation(conversationId) {
+            selectedConversation = conversations[conversationId];
+            
+            // Mark as read
+            selectedConversation.unread = 0;
+            
+            // Update UI
+            displayConversations();
+            displayMessages();
+            
+            // Enable input
+            document.getElementById('admin-message-input').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            
+            // Update header
+            document.getElementById('chat-header').innerHTML = `
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                        ${selectedConversation.userEmail.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <strong style="color: #00d4ff; font-size: 1.1rem;">${selectedConversation.userEmail}</strong>
+                        <p style="margin: 5px 0 0 0; color: #888; font-size: 0.85rem;">Conversation ID: ${conversationId.substring(0, 20)}...</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayMessages() {
+            const container = document.getElementById('chat-messages');
+            
+            container.innerHTML = selectedConversation.messages.map(msg => {
+                const isUser = msg.sender === 'user';
+                const isAI = msg.sender === 'ai';
+                const timestamp = new Date(msg.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="message-bubble ${msg.sender}">
+                        ${!isUser ? `<div style="width: 35px; height: 35px; background: linear-gradient(135deg, #00d4ff, #9d00ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">${isAI ? '🤖' : '👤'}</div>` : ''}
+                        <div class="message-content">
+                            ${msg.message}
+                            <div style="margin-top: 5px; font-size: 0.75rem; opacity: 0.7;">${timestamp}</div>
+                        </div>
+                        ${isUser ? `<div style="width: 35px; height: 35px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">${selectedConversation.userEmail.charAt(0).toUpperCase()}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendAdminMessage() {
+    if (!selectedConversation) return;
+    
+    const input = document.getElementById('admin-message-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    try {
+        // Save to database
+        const { error } = await supabase
+            .from('support_messages')
+            .insert({
+                user_id: selectedConversation.userId,
+                user_email: selectedConversation.userEmail, // ADD THIS LINE
+                conversation_id: selectedConversation.id,
+                sender: 'support',
+                message: message,
+                created_at: new Date().toISOString()
+            });
+        
+        if (error) throw error;
+        
+        // Add to local conversation
+        selectedConversation.messages.push({
+            sender: 'support',
+            message: message,
+            created_at: new Date().toISOString()
+        });
+        
+        // Clear input
+        input.value = '';
+        
+        // Update display
+        displayMessages();
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Failed to send message');
+    }
+}
+
+        // Real-time sync (every 1 second for FAST updates)
+        function startRealTimeSync() {
+            setInterval(async () => {
+                await loadConversations();
+                
+                // Auto-refresh selected conversation
+                if (selectedConversation) {
+                    const updated = conversations[selectedConversation.id];
+                    if (updated && updated.messages.length !== selectedConversation.messages.length) {
+                        selectedConversation = updated;
+                        displayMessages();
+                    }
+                }
+            }, 1000);
+        }
+
+        // Play notification sound
+        function playNotificationSound() {
+            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE=');
+            audio.play().catch(() => {});
+        }
+
+        console.log('✅ Admin Chat System Loaded - Real-time sync active');
+    </script>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Weekly Payout System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container" style="max-width: 1400px; margin: 40px auto; padding: 20px;">
+        <h1>🔐 Admin Panel - Weekly Payout System</h1>
+        
+        <div id="auth-section">
+            <div style="background: #1a1a2e; padding: 30px; border-radius: 12px; margin: 20px 0;">
+                <h3>Admin Login Required</h3>
+                <input type="email" id="admin-email" placeholder="Email" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #333; background: #16162a; color: white;">
+                <input type="password" id="admin-password" placeholder="Password" style="width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #333; background: #16162a; color: white;">
+                <button onclick="adminLogin()" style="padding: 12px 24px; background: #00d4ff; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Login</button>
+            </div>
+        </div>
+
+        <div id="admin-content" style="display: none;">
+            <!-- REAL-TIME STATS -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 30px 0;">
+                <div class="card">
+                    <h4>💰 This Week's Payout</h4>
+                    <p id="weekly-payout-amount" style="font-size: 2rem; color: #00ff88;">$0.00</p>
+                    <small>Paid this Friday</small>
+                </div>
+                <div class="card">
+                    <h4>👥 Eligible Users</h4>
+                    <p id="eligible-users-count" style="font-size: 2rem; color: #00d4ff;">0</p>
+                    <small>For this Friday</small>
+                </div>
+                <div class="card">
+                    <h4>📊 Today's Earnings</h4>
+                    <p id="today-earnings" style="font-size: 2rem; color: #ffd700;">$0.00</p>
+                    <small>Total earned today</small>
+                </div>
+                <div class="card">
+                    <h4>🏦 Total Available</h4>
+                    <p id="total-available" style="font-size: 2rem; color: #9d00ff;">$0.00</p>
+                    <small>Across all users</small>
+                </div>
+            </div>
+
+            <!-- EARNINGS CHART -->
+            <div class="card" style="margin: 30px 0;">
+                <h3>📈 Daily Earnings (Last 7 Days)</h3>
+                <canvas id="earningsChart" height="100"></canvas>
+            </div>
+
+            <!-- WEEKLY PAYOUT PREVIEW -->
+            <div class="card" style="margin: 30px 0;">
+                <h3>💰 This Friday's Payout Preview</h3>
+                <div id="friday-payout-preview"></div>
+            </div>
+
+            <!-- DAILY EARNINGS BREAKDOWN -->
+            <div class="card" style="margin: 30px 0;">
+                <h3>📅 Daily Earnings Breakdown</h3>
+                <div id="daily-earnings-list"></div>
+            </div>
+
+            <!-- WEEKLY PAYOUT HISTORY -->
+            <div class="card" style="margin: 30px 0;">
+                <h3>🏦 Weekly Payout History</h3>
+                <div id="weekly-payout-history"></div>
+            </div>
+
+            <!-- SUSPICIOUS CONVERSIONS -->
+            <div class="card" style="margin: 30px 0;">
+                <h3>🚨 Suspicious Conversions</h3>
+                <div id="suspicious-conversions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supabase = window.supabase.createClient(
+            'https://qpwpvehfriedhafjmzij.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwd3B2ZWhmcmllZGhhZmptemlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NTI2ODMsImV4cCI6MjA3NjIyODY4M30.R5ITHyu5OGUE_Jw0zMmLzpL7SjPEvJzwSQamwS2iCow'
+        );
+
+        let earningsChart = null;
+
+        async function adminLogin() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            
+            if (error) {
+                alert('Login failed: ' + error.message);
+                return;
+            }
+
+            // Check if user is admin
+            const { data: adminUser } = await supabase
+                .from('admin_users')
+                .select('*')
+                .eq('user_id', (await supabase.auth.getUser()).data.user.id)
+                .single();
+
+            if (!adminUser) {
+                alert('Access denied: Admin privileges required');
+                await supabase.auth.signOut();
+                return;
+            }
+
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+            loadAdminData();
+        }
+
+        async function loadAdminData() {
+            await loadWeeklyPayoutPreview();
+            await loadDailyEarnings();
+            await loadWeeklyPayoutHistory();
+            await loadSuspiciousConversions();
+            await loadTotalBalances();
+            updateEarningsChart();
+        }
+
+        async function loadWeeklyPayoutPreview() {
+            // Calculate this week's Monday to Sunday
+            const today = new Date();
+            const thisMonday = new Date(today);
+            thisMonday.setDate(today.getDate() - today.getDay() + 1); // This week's Monday
+            const thisSunday = new Date(thisMonday);
+            thisSunday.setDate(thisMonday.getDate() + 6); // This week's Sunday
+
+            const weekStart = thisMonday.toISOString().split('T')[0];
+            const weekEnd = thisSunday.toISOString().split('T')[0];
+
+            // Get eligible users for this Friday
+            const { data: eligibleUsers } = await supabase
+                .from('user_balances')
+                .select('available_balance, payout_address, auth_users:user_id(email)')
+                .gte('available_balance', 5.00)
+                .not('payout_address', 'is', null)
+                .eq('keep_balance', false);
+
+            const totalPayout = eligibleUsers?.reduce((sum, user) => sum + parseFloat(user.available_balance), 0) || 0;
+
+            document.getElementById('weekly-payout-amount').textContent = `$${totalPayout.toFixed(2)}`;
+            document.getElementById('eligible-users-count').textContent = eligibleUsers?.length || 0;
+
+            const container = document.getElementById('friday-payout-preview');
+            if (!eligibleUsers || eligibleUsers.length === 0) {
+                container.innerHTML = '<p style="color: #888; padding: 20px; text-align: center;">No eligible users for this Friday\'s payout</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="background: rgba(0,255,136,0.1); padding: 20px; border-radius: 8px; border: 1px solid #00ff88;">
+                    <h4 style="color: #00ff88; margin: 0 0 15px 0;">
+                        🗓️ Week ${weekStart} to ${weekEnd} • Payout: This Friday
+                    </h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <strong>Total Amount:</strong> $${totalPayout.toFixed(2)}<br>
+                            <strong>Users:</strong> ${eligibleUsers.length}<br>
+                            <strong>Average per User:</strong> $${(totalPayout / eligibleUsers.length).toFixed(2)}
+                        </div>
+                        <div>
+                            <strong>Week Period:</strong> ${weekStart} to ${weekEnd}<br>
+                            <strong>Payout Date:</strong> This Friday<br>
+                            <strong>Status:</strong> 🟢 Ready for Auto-Payout
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4>Eligible Users (${eligibleUsers.length})</h4>
+                    ${eligibleUsers.map(user => `
+                        <div style="border: 1px solid #333; border-radius: 6px; padding: 10px; margin: 5px 0; background: rgba(255,255,255,0.05);">
+                            <strong>${user.auth_users?.email}</strong> - $${parseFloat(user.available_balance).toFixed(2)}
+                            <br><small style="color: #888;">${user.payout_address?.substring(0, 25)}...</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function loadDailyEarnings() {
+            const { data: dailyEarnings } = await supabase
+                .from('daily_earnings')
+                .select('*')
+                .order('earnings_date', { ascending: false })
+                .limit(7);
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayEarnings = dailyEarnings?.find(de => de.earnings_date === today);
+            
+            document.getElementById('today-earnings').textContent = todayEarnings ? `$${todayEarnings.total_earned.toFixed(2)}` : '$0.00';
+
+            const container = document.getElementById('daily-earnings-list');
+            if (!dailyEarnings || dailyEarnings.length === 0) {
+                container.innerHTML = '<p style="color: #888; padding: 20px; text-align: center;">No daily earnings data yet</p>';
+                return;
+            }
+
+            container.innerHTML = dailyEarnings.map(day => `
+                <div style="display: grid; grid-template-columns: 100px 1fr 1fr 1fr 1fr; gap: 15px; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
+                    <strong>${day.earnings_date}</strong>
+                    <span>$${day.total_earned.toFixed(2)}</span>
+                    <span>$${day.available_balance.toFixed(2)}</span>
+                    <span>$${day.pending_balance.toFixed(2)}</span>
+                    <span>${day.conversion_count} conversions</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 100px 1fr 1fr 1fr 1fr; gap: 15px; align-items: center; padding: 10px; background: rgba(255,255,255,0.02);">
+                    <strong>Date</strong>
+                    <strong>Total Earned</strong>
+                    <strong>Available</strong>
+                    <strong>Pending</strong>
+                    <strong>Conversions</strong>
+                </div>
+            `).join('');
+        }
+
+        async function loadWeeklyPayoutHistory() {
+            const { data: weeklyPayouts } = await supabase
+                .from('weekly_payouts')
+                .select('*')
+                .order('payout_date', { ascending: false })
+                .limit(10);
+
+            const container = document.getElementById('weekly-payout-history');
+            if (!weeklyPayouts || weeklyPayouts.length === 0) {
+                container.innerHTML = '<p style="color: #888; padding: 20px; text-align: center;">No weekly payout history yet</p>';
+                return;
+            }
+
+            container.innerHTML = weeklyPayouts.map(payout => `
+                <div style="border: 1px solid #00d4ff; border-radius: 8px; padding: 15px; margin: 10px 0; background: rgba(0,212,255,0.1);">
+                    <div style="display: flex; justify-content: between; align-items: center;">
+                        <div style="flex: 1;">
+                            <strong>Week:</strong> ${payout.week_start} to ${payout.week_end}<br>
+                            <strong>Paid on:</strong> ${payout.payout_date}<br>
+                            <strong>Amount:</strong> $${payout.total_amount.toFixed(2)}<br>
+                            <strong>Users:</strong> ${payout.user_count}
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="background: ${payout.status === 'completed' ? '#00ff88' : '#ffd700'}; color: #000; padding: 5px 10px; border-radius: 12px; font-size: 0.8rem;">
+                                ${payout.status}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadSuspiciousConversions() {
+            const { data: conversions } = await supabase
+                .from('conversions')
+                .select('*, auth_users:user_id(email)')
+                .eq('is_suspicious', true)
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            const container = document.getElementById('suspicious-conversions');
+            if (!conversions || conversions.length === 0) {
+                container.innerHTML = '<p style="color: #888; padding: 20px; text-align: center;">No suspicious conversions</p>';
+                return;
+            }
+
+            container.innerHTML = conversions.map(conv => `
+                <div style="border: 1px solid #ff4444; border-radius: 8px; padding: 15px; margin: 10px 0; background: rgba(255,68,68,0.1);">
+                    <div style="display: flex; justify-content: between; align-items: center;">
+                        <div style="flex: 1;">
+                            <strong>User:</strong> ${conv.auth_users?.email || conv.user_id}<br>
+                            <strong>Offer:</strong> ${conv.offer_title}<br>
+                            <strong>Amount:</strong> $${conv.amount} • <strong>Fraud Score:</strong> ${conv.fraud_score}/100<br>
+                            <strong>Flags:</strong> ${conv.fraud_flags?.join(', ') || 'None'}
+                        </div>
+                        <div>
+                            <button onclick="markConversionClean('${conv.id}')" style="background: #00ff88; color: #000; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin: 5px;">Mark Clean</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadTotalBalances() {
+            const { data: balances } = await supabase
+                .from('user_balances')
+                .select('available_balance, pending_balance');
+
+            const totalAvailable = balances?.reduce((sum, bal) => sum + parseFloat(bal.available_balance), 0) || 0;
+            document.getElementById('total-available').textContent = `$${totalAvailable.toFixed(2)}`;
+        }
+
+        function updateEarningsChart() {
+            const ctx = document.getElementById('earningsChart').getContext('2d');
+            
+            if (earningsChart) {
+                earningsChart.destroy();
+            }
+
+            // Mock data - replace with actual daily earnings data
+            earningsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Daily Earnings',
+                        data: [65, 59, 80, 81, 56, 55, 40],
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0,255,136,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#fff' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: '#fff' }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function markConversionClean(conversionId) {
+            const { error } = await supabase
+                .from('conversions')
+                .update({ 
+                    is_suspicious: false,
+                    fraud_score: 0 
+                })
+                .eq('id', conversionId);
+
+            if (!error) {
+                alert('Conversion marked as clean');
+                loadAdminData();
+            }
+        }
+
+        // Refresh data every 60 seconds
+        setInterval(loadAdminData, 60000);
+
+        // Manual refresh button
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' && e.ctrlKey) {
+                e.preventDefault();
+                loadAdminData();
+            }
+        });
+    </script>
+</body>
+</html>
